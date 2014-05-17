@@ -234,6 +234,10 @@ ro cidja cu ka'e fusra
 .i ro da ka'e se pinka
 .i ro da prenu gi'o te pinka
 .i ro da prenu gi'o ve pinka
+.i ro da prenu gi'o tavla
+.i ro da prenu gi'o se tavla
+.i ro da ka'e te tavla
+.i ro da bangu gi'o ve tavla
 
 .i ro da se moklu gi'o bacru
 .i ro da sance gi'o se bacru
@@ -353,8 +357,13 @@ ro papri cu dacti
 ro jbopre cu sampli
 ro fonxa cu minji
 
+.i ro da prenu gi'o prije
+.i ro da fatci gi'o se prije
+.i ro da prenu gi'o te prije
+
 ro da prenu gi'o se tixnu
 
+.i la'oi gracefu cu remna
 .i la timos cu nanmu
 .i la timos cu dotco
 .i la turgul cu prenu
@@ -665,6 +674,10 @@ ro da namcu gi'o se djedi
 ro da temci gi'o jeftu
 ro da namcu gi'o se jeftu
 
+#math
+ro da sinso gi'o namcu
+ro da se sinso gi'o namcu
+
 #days
 .i ro da se cerni gi'o te tcika
 .i ro da se donri gi'o te tcika
@@ -719,7 +732,9 @@ ro da namcu gi'o te pilji
 .i ro da mokca gi'o te konju
 .i je'u nai ro da dacti gi'o bolci
 .i ro da se marji gi'o bolci
-ro da mokca gi'o se linji
+.i ro da mokca gi'o se linji
+.i ro da se salpo gi'o radno
+.i ro da se radno gi'o namcu
 
 #textures
 .i je'u nai ro da dacti gi'o xutla
