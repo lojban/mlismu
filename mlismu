@@ -1,11 +1,12 @@
 #!/usr/bin/perl -l
 
-
 use strict;
 use warnings;
 #use Smart::Comments;
 
 use List::Util 'shuffle';
+use Getopt::Long;
+use Pod::Usage;
 
 my %db;               #{cusku => [[prenu], [selsku], [prenu]]}
 my %parent_db;        #{nanmu => [nakni, remna], nanla => [nanmu]}
@@ -16,7 +17,7 @@ my $explicit_zohe_prob = 0.1;
 my $lu_prob = 0.5;
 my $li_prob = 0.5;
 my $explicit_fa_prob = 0.1;
-my $selbri_prob = 0.5; #the higher this number, the further forward the selbri
+my $selbri_prob = 0.25; #the higher this number, the further forward the selbri
                        #occurs
 my $se_prob = 0.2;
 my $fa_prob = 0.2;
@@ -69,16 +70,39 @@ my @nu = qw(nu zu'o za'i mu'e);
 my @ui = qw( .a'a .a'e .a'i .a'o .a'u .ai .au ba'a ba'u be'u bi'u bu'o ca'e
     da'i dai do'a .e'a .e'e .e'i .e'o .e'u .ei fu'i ga'i ge'e .i'a .i'e .i'i
     .i'o .i'u .ia .ie .ii .io .iu ja'o je'u ji'a jo'a ju'a ju'o ka'u kau ke'u
-    ki'a ku'i la'a le'o li'a li'o mi'u mu'a na'i .o'a .o'e .o'i .o'o .o'u .oi
+    ki'a ku'i la'a le'o li'a mi'u mu'a na'i .o'a .o'e .o'i .o'o .o'u .oi
     pa'e pau pe'a pe'i po'o ra'u re'e ri'e ro'a ro'e ro'i ro'o ro'u ru'a sa'a
     sa'e sa'u se'a se'i se'o si'a su'a ta'o ta'u ti'e to'u .u'a .u'e .u'i .u'o
     .u'u .ua .ue .ui .uo .uu va'i vu'e xu za'a zo'o zu'u );
+#hand-removed li'o
+
+my @na = qw(na ja'a je'a na'e no'e to'e);
+my $na_prob = 0.1;
 
 my %cache;             #{cusku => [prenu, remna, nanla, ...]
 my %parent_cache;      #{nanmu => [nakni, remna, mabru, danlu, dacti]}
 my %extant_places;     #{"tuple" => undef, "se tuple" => undef}
 
-open (my $db, '<', "$ENV{HOME}/lojban/fatci.txt") or die "Can't open fatci.txt: $!";
+my $fatci_file = "$ENV{HOME}/mlismu/fatci.txt";
+my $selbri;
+my $repetitions;
+my $help = 0;
+my $man = 0;
+
+GetOptions('fatci|f=s'       => \$fatci_file,
+           'selbri|s=s'      => \$selbri,
+           'repetitions|n=i' => \$repetitions,
+           'help|?'          => \$help,
+           'man'             => \$man,
+           '<>' => sub { (($_[0] =~ /^\d+$/) 
+                          ? $repetitions
+                          : $selbri
+                         ) = $_[0];},
+          ) || pod2usage(2);
+pod2usage(1) if $help;
+pod2usage(-exitstatus => 0, -verbose => 2) if $man;
+
+open (my $db, '<', $fatci_file) or die "Can't open fatci.txt: $!";
 while(<$db>){  ### Reading fatci...                    done
     chomp;
     s/#.*//;
@@ -115,9 +139,9 @@ while(<$db>){  ### Reading fatci...                    done
               (\S*)\s*                           #brivla
               $}x)
     { 
-        unless ($sumti =~ /^la\b/ || $sumti =~ s/^ro\s*//){
-            warn ".i mi na jimpe tu'a $sumti";
-            next;
+        unless ($sumti =~ /^la(?:'?o?i?)?\b/ 
+                || $sumti =~ s/^(?:ro|l[oe](?:'[ei]|i)?)\s*//){
+            die ".i mi na jimpe tu'a $sumti";
         }
 
         no warnings 'uninitialized';
@@ -127,7 +151,7 @@ while(<$db>){  ### Reading fatci...                    done
         next;
     }
 
-    warn "mi na jimpe lo du'u $_";
+    die "mi na jimpe lo du'u $_";
 }
 close $db;
 
@@ -135,15 +159,25 @@ use Data::Dumper;
 print Dumper(\%db) if $debug;
 print Dumper(\%parent_db) if $debug;
 
-my $arg = $ARGV[0] || 40;
-if ($arg =~ /^\D+$/){
-    my $selbri = $arg;
-    print assemble_bridi($selbri, fill_places($selbri));
-} else {
-    for (1..$arg){
+if (!defined($repetitions)){
+    $repetitions = defined($selbri) ? 1 : 40;
+}
+for (1..$repetitions){
+    if (defined($selbri)){
+        print assemble_bridi($selbri, fill_places($selbri));
+    } else {
         print text_bridi();
     }
 }
+    
+#my $arg = $ARGV[0] || 40;
+#if ($arg =~ /^\D+$/){
+#    $selbri = $arg;
+#} else {
+#    for (1..$arg){
+#        print text_bridi();
+#    }
+#}
 print Dumper(\%cache) if $debug;
 
 sub text_bridi {
@@ -207,6 +241,7 @@ sub assemble_bridi {
         if (!$selbri_yet && rand() < $selbri_prob){
             $selbri_yet = 1;
             $bridi .= " cu" if $bridi;
+            $bridi .= " ".rnd(@na) if rand() < $na_prob;
             $bridi .= " $selbri";
             $i = 2 if ($i == 1);
         }
@@ -224,6 +259,7 @@ sub assemble_bridi {
     }
     unless ($selbri_yet){
         $bridi .= " cu" if $bridi;
+        $bridi .= " ".rnd(@na) if rand() < $na_prob;
         $bridi .= " $selbri";
     }
     $bridi =~ s/^ //;
@@ -343,7 +379,9 @@ sub gen_sumti {
     my @places = fill_places($selbri, $recursion);
     @places[0,$place] = @places[$place,0];
     
-    my $sumti = rnd(@gadri) . " $se[$place] $selbri";
+    my $sumti = rnd(@gadri);
+    $sumti .= " ".rnd(@na) if rand() < $na_prob;
+    $sumti .= " $se[$place] $selbri";
     $sumti =~ s/  / /;
     shift @places;
     if (@places){
@@ -428,3 +466,20 @@ sub num2text {
 sub rnd {
     return $_[rand @_];
 }
+
+__END__
+
+=head1 NAME
+
+mlismu - Generate semantically near-valid grammatical lojban nonsense
+
+=head1 SYNOPSIS
+
+mlismu [-f file] [[-n] number] [[-s] selbri]
+
+ Options:
+    -f          file to read facts from; defaults to "fatci.txt"
+    -n          number of bridi to produce
+    -s          main selbri for all produced bridi
+
+=cut
